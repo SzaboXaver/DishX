@@ -1,0 +1,44 @@
+body {
+    font-family: Georgia, "Times New Roman", serif;
+    background: #f4eee6;
+    color: #4a382c;
+    min-height: 100vh;
+    padding: 35px;
+}
+
+.login-form, .register-form {
+    display: flex;
+    flex-direction: column;
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 500px;
+    text-align: center;
+    padding: 20px;
+    border: solid 5px #dbb9a1;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.login-form input, .register-form input {
+    padding: 10px 20px;
+    padding-left: 5px;
+}
+
+.login-form input:focus, .register-form input:focus {
+    outline: none;
+    border: 2px solid #4a382c;
+}
+
+.login-form button, .register-form button {
+    padding: 10px 20px;
+    background-color: #4a382c;
+    color: #f4eee6;
+    border: none;
+    cursor: pointer;
+}
+
+.login-form label, .register-form label {
+    margin-bottom: 5px;
+    font-size: 20px;
+}

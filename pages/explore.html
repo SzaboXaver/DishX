@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore Recipes - DishX</title>
+    <link rel="stylesheet" href="../css.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         TOP NAVIGATION HEADER
+         ========================= -->
+    <header class="app-header">
+        <div class="nav-container">
+            <a href="index.html" class="brand-logo">
+                DishX
+            </a>
+
+            <nav class="nav-links">
+                <a href="index.html" class="nav-item">Home Feed</a>
+                <a href="explore.html" class="nav-item active">Explore</a>
+                <a href="bookmarks.html" class="nav-item">Bookmarks</a>
+                <a href="personal page.html" class="nav-item">My Profile</a>
+            </nav>
+
+            <div class="nav-right-section">
+                <!-- USER PROFILE BADGE -->
+                <a href="personal page.html" class="user-badge-nav" title="View your profile">
+                    <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=Krisztina" alt="Krisztina Profile">
+                    <span>Krisztina</span>
+                </a>
+
+                <!-- NOTIFICATION BELL SYMBOL NEXT TO USERNAME -->
+                 <!--
+                    <div class="notification-wrapper">
+                    <button class="notif-bell-btn" id="notifBellBtn" title="Notifications" aria-label="Notifications">
+                        <svg class="bell-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notif-badge" id="notifBadge">3</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <h3>Notifications</h3>
+                            <button class="notif-mark-read" id="markReadBtn">Mark all read</button>
+                        </div>
+                        <div class="notif-list">
+                            <div class="notif-item unread">
+                                <img class="notif-avatar" src="https://placehold.co/600x400/b89b7d/5a4030?text=Marco" alt="Chef Marco">
+                                <div class="notif-content">
+                                    <p><strong>Chef Marco</strong> commented on your recipe <em>Chocolate Cake</em></p>
+                                    <span class="notif-time">10m ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item unread">
+                                <img class="notif-avatar" src="https://placehold.co/600x400/806653/ffffff?text=Sarah" alt="Baker Sarah">
+                                <div class="notif-content">
+                                    <p><strong>Baker Sarah</strong> saved your <em>Rich Chocolate Layer Cake</em> recipe</p>
+                                    <span class="notif-time">1h ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item unread">
+                                <img class="notif-avatar" src="https://placehold.co/600x400/927965/ffffff?text=Gordon" alt="Gordon Ramsay">
+                                <div class="notif-content">
+                                    <p><strong>Gordon Ramsay</strong> started following you</p>
+                                    <span class="notif-time">2h ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 -->
+            </div>
+        </div>
+    </header>
+
+    <!-- =========================
+         MAIN LAYOUT
+         ========================= -->
+    <div class="app-layout">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="left-sidebar">
+            <div class="sidebar-menu">
+                <a href="index.html" class="menu-link">
+                    <span>Home</span>
+                </a>
+                <a href="explore.html" class="menu-link active">
+                    <span>Explore</span>
+                </a>
+                <a href="bookmarks.html" class="menu-link">
+                    <span>Bookmarks</span>
+                </a>
+                <a href="personal page.html" class="menu-link">
+                    <span>Profile</span>
+                </a>
+
+                <button class="btn-post-primary" onclick="window.location.href='index.html#postTextInput'">
+                    + Share Recipe
+                </button>
+            </div>
+
+            <a href="personal page.html" class="sidebar-user-card" title="Open My Profile">
+                <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=Krisztina" alt="Krisztina">
+                <div class="user-card-names">
+                    <span class="user-card-name">Krisztina</span>
+                    <span class="user-card-handle">@chef_krisztina</span>
+                </div>
+            </a>
+        </aside>
+
+        <!-- CENTER EXPLORE CONTENT -->
+        <main class="main-feed" style="grid-column: span 2;">
+
+            <!-- SEARCH BAR AT THE TOP CENTER COVERING THE TOP -->
+            <section class="explore-top-section">
+                <h1 class="explore-title">Explore Delicious Recipes</h1>
+                <p class="explore-subtitle">Discover popular dishes, homemade secret recipes, and culinary creations from top chefs around the world.</p>
+                
+                <div class="explore-search-wrapper">
+                    <span class="explore-search-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </span>
+                    <input type="text" id="exploreSearchInput" class="explore-search-input" placeholder="Search recipes by name, ingredients, tags or chef (e.g. Pasta, Chocolate, Sourdough)...">
+                </div>
+
+                <div class="explore-tags-row">
+                    <button class="explore-tag-pill active" data-tag="all">All Dishes</button>
+                    <button class="explore-tag-pill" data-tag="baking">Baking</button>
+                    <button class="explore-tag-pill" data-tag="pasta">Pasta</button>
+                    <button class="explore-tag-pill" data-tag="italian">Italian</button>
+                    <button class="explore-tag-pill" data-tag="bread">Bread</button>
+                    <button class="explore-tag-pill" data-tag="desserts">Desserts</button>
+                    <button class="explore-tag-pill" data-tag="quickmeals">Quick Meals</button>
+                </div>
+            </section>
+
+            <!-- PICTURES OF RECIPES GRID (CLICK TO VIEW ACTUAL POST) -->
+            <section class="explore-grid" id="exploreGrid">
+                <!-- JavaScript populates recipe picture cards here -->
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../scripts/feed.js"></script>
+    <script src="../scripts/app.js"></script>
+    <script type="module" src="../scripts/explorer.js"></script>
+</body>
+
+</html>

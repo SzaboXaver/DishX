@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DishX - Twitter for Recipes & Foodies</title>
+    <link rel="stylesheet" href="../css.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         TOP NAVIGATION HEADER
+         ========================= -->
+    <header class="app-header">
+        <div class="nav-container">
+            <a href="index.html" class="brand-logo">
+                DishX
+            </a>
+
+            <nav class="nav-links">
+                <a href="index.html" class="nav-item active">Home Feed</a>
+                <a href="explore.html" class="nav-item">Explore</a>
+                <a href="bookmarks.html" class="nav-item">Bookmarks</a>
+                <a href="personal page.html" class="nav-item">My Profile</a>
+            </nav>
+
+            <div class="nav-right-section">
+                <!-- USER PROFILE BADGE -->
+                <a href="personal page.html" class="user-badge-nav" title="View your profile">
+                    <!--JavaScript generated section-->
+                </a>
+
+                <!-- NOTIFICATION BELL SYMBOL NEXT TO USERNAME -->
+                 <!--
+                    <div class="notification-wrapper">
+                    <button class="notif-bell-btn" id="notifBellBtn" title="Notifications" aria-label="Notifications">
+                        <svg class="bell-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="notif-badge" id="notifBadge">3</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <h3>Notifications</h3>
+                            <button class="notif-mark-read" id="markReadBtn">Mark all read</button>
+                        </div>
+                        <div class="notif-list">
+                            <div class="notif-item unread">
+                                <img class="notif-avatar" src="https://placehold.co/600x400/b89b7d/5a4030?text=Marco" alt="Chef Marco">
+                                <div class="notif-content">
+                                    <p><strong>Chef Marco</strong> commented on your recipe <em>Chocolate Cake</em></p>
+                                    <span class="notif-time">10m ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item unread">
+                                <img class="notif-avatar" src="https://placehold.co/600x400/806653/ffffff?text=Sarah" alt="Baker Sarah">
+                                <div class="notif-content">
+                                    <p><strong>Baker Sarah</strong> saved your <em>Rich Chocolate Layer Cake</em> recipe</p>
+                                    <span class="notif-time">1h ago</span>
+                                </div>
+                            </div>
+                            <div class="notif-item unread">
+                                <img class="notif-avatar" src="https://placehold.co/600x400/927965/ffffff?text=Gordon" alt="Gordon Ramsay">
+                                <div class="notif-content">
+                                    <p><strong>Gordon Ramsay</strong> started following you</p>
+                                    <span class="notif-time">2h ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 -->
+                
+            </div>
+        </div>
+    </header>
+
+    <!-- =========================
+         MAIN 3-COLUMN LAYOUT
+         ========================= -->
+    <div class="app-layout">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="left-sidebar">
+            <div class="sidebar-menu">
+                <a href="index.html" class="menu-link active">
+                    <span>Home</span>
+                </a>
+                <a href="explore.html" class="menu-link">
+                    <span>Explore</span>
+                </a>
+                <a href="bookmarks.html" class="menu-link">
+                    <span>Bookmarks</span>
+                </a>
+                <a href="personal page.html" class="menu-link">
+                    <span>Profile</span>
+                </a>
+
+                <button class="btn-post-primary" onclick="document.getElementById('postTextInput').focus()">
+                    + Share Recipe
+                </button>
+            </div>
+
+            <a href="personal page.html" class="sidebar-user-card" title="Open My Profile">
+                <!--JavaScript content-->
+            </a>
+        </aside>
+
+
+        <!-- CENTER MAIN FEED -->
+        <main class="main-feed">
+
+            <!-- FEED TABS -->
+            <div class="feed-tabs-header">
+                <button class="feed-tab active" data-tab="for-you">For You</button>
+                <button class="feed-tab" data-tab="following">Following</button>
+                <button class="feed-tab" data-tab="trending">Trending Recipes</button>
+            </div>
+
+            <!-- RECIPE POST COMPOSER -->
+            <div class="composer-card">
+                <div class="composer-top">
+                    <img class="composer-avatar" src="https://placehold.co/600x400/d8c3ad/5a4030?text=Krisztina" alt="Krisztina">
+                    <div class="composer-form">
+                        <textarea id="postTextInput" class="composer-input" placeholder="What are you cooking today? Share a recipe, photo, or food thought..."></textarea>
+                        
+                        <button type="button" id="toggleRecipeFields" class="recipe-fields-toggle">
+                            + Add Recipe Details (Ingredients & Time)
+                        </button>
+
+                        <div id="recipeExtraFields" class="recipe-extra-fields">
+                            <div class="composer-row">
+                                <input type="text" id="recipeTitleInput" placeholder="Recipe Title (e.g., Creamy Garlic Pasta)">
+                                <input type="text" id="prepTimeInput" placeholder="Prep Time (e.g., 25 mins)">
+                            </div>
+                            <div class="composer-row">
+                                <select id="difficultySelect">
+                                    <option value="Easy">Difficulty: Easy</option>
+                                    <option value="Medium">Difficulty: Medium</option>
+                                    <option value="Hard">Difficulty: Hard</option>
+                                </select>
+                                <input type="text" id="servingsInput" placeholder="Servings (e.g., 4 servings)">
+                            </div>
+                            <div class="composer-row">
+                                <input type="text" id="ingredientsInput" placeholder="Ingredients (comma separated: Flour, Eggs, Sugar)">
+                            </div>
+                            <div class="composer-row">
+                                <textarea id="instructionsInput" class="composer-input" placeholder="Cooking Steps & Instructions..." style="min-height: 50px;"></textarea>
+                            </div>
+                            <div class="composer-row">
+                                <input type="file" id="imageFileInput">
+                            </div>
+                            <div class="composer-row">
+                                <input type="text" id="hashtags" placeholder="#hashtags">
+                            </div>
+                            <div class="composer-row visibility">
+                                <label>Choose visibilty!</label><br>
+                                <select id="visibilitySelect">
+                                    <option value="public">Visibility: Public</option>
+                                    <option value="private">Visibility: Private</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="composer-bottom">
+                            <!--
+                                 <div class="composer-tools">
+                                <button type="button" class="composer-tool-btn" title="Add Dish Photo">Photo</button>
+                                <button type="button" class="composer-tool-btn" title="Add Ingredients Tag">Tags</button>
+                                <button type="button" class="composer-tool-btn" title="Add Timer">Timer</button>
+                            </div>
+                            -->
+                            <button type="button" id="submitRecipeBtn" class="btn-submit-recipe">
+                                Post Recipe
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- FEED TIMELINE -->
+            <div class="feed-timeline" id="feedTimeline">
+                <!--JavaScript által generált tartalom-->
+            </div>
+
+        </main>
+
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="right-sidebar">
+
+            <!-- SEARCH BOX -->
+            <div class="search-box">
+                <input type="text" id="feedSearchInput" placeholder="Search recipes, tags, chefs...">
+            </div>
+
+            <!-- TRENDING TOPICS WIDGET -->
+            <div class="widget-card">
+                <div class="widget-title">What's Cooking</div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#PastaNight</span>
+                        <span class="trending-count">2,410 shared recipes</span>
+                    </div>
+                </div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#ChocolateCake</span>
+                        <span class="trending-count">1,890 shared recipes</span>
+                    </div>
+                </div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#SourdoughEra</span>
+                        <span class="trending-count">1,250 shared recipes</span>
+                    </div>
+                </div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#AirFryerHacks</span>
+                        <span class="trending-count">980 shared recipes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHEFS TO FOLLOW WIDGET -->
+            <div class="widget-card" id="chefsToFollow">
+                
+
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../scripts/feed.js"></script>
+    <script src="../scripts/favorite.js"></script>
+    <script src="../scripts/script.js"></script>
+    <script src="../scripts/app.js"></script>
+    <script type="module" src="../scripts/database.js"></script>
+</body>
+
+</html>

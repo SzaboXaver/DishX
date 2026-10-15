@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <p id="pa"></p>
+    <button onclick="loadUsers()">sad</button>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const Url = "https://mhlgvtvdndizgcvwrvex.supabase.co";
+    const Key = "sb_publishable_ao0QxBOIPW8O1vraePADdg_QwgPLGaC";
+
+    const db = window.supabase.createClient(Url, Key);
+
+    async function loadUsers() {
+        const { data, error } = await db
+            .from("test")
+            .select("*");
+
+        if (error) {
+            console.error("Error:", error);
+            document.getElementById("pa").textContent = error.message;
+            return;
+        }
+
+        console.log("DATA:", data);
+        console.log("ERROR:", error);
+        document.getElementById("pa").textContent =JSON.stringify(data, null, 2);;
+
+       
+    }
+</script>
+</html>
