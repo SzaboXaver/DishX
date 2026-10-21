@@ -1,36 +1,48 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"; //Supabase import
 import dayjs from "https://cdn.jsdelivr.net/npm/dayjs@1.11.23/+esm"; //dayjs import
-const supabase = createClient(
-  "https://zlncrzsnizkozucrkvyn.supabase.co", //Project URL
-  "sb_publishable_RJZkVfaz6GD0OF1jTFLTGQ_T9ESEubR", //Publishable key
-);
+import { supabase } from "./supabaseClient.js";
+import { upload, fetchRecipes } from "./actions.js";
+import { avatarAttrs, setAvatar } from "./avatar.js";
+
 let spanHtml = ``;
 let spanBottomHtml = ``;
 let html = "";
+
+// Escapes user-written text before it goes into innerHTML
+const esc = (s) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+
 const {
   data: { session },
 } = await supabase.auth.getSession();
 
-if (!{ session }) {
-  html = "";
-
-  document.querySelector(".feed-timeline").innerHTML = html;
-} else {
-  spanHtml = `
-<img src="https://placehold.co/600x400/d8c3ad/5a4030?text=Krisztina" alt="No User Profile">
+// Fallback HTML for when nobody is signed in
+spanHtml = `
+<img src="https://placehold.co/600x400/d8c3ad/5a4030?text=No_User" alt="No User Profile">
 <span>No User</span>
 `;
-  spanBottomHtml = `
+spanBottomHtml = `
     <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=No_User" alt="No_User">
     <div class="user-card-names">
         <span class="user-card-name">No User</span>
         <span class="user-card-handle">@No User</span>
     </div>
 `;
-  document.querySelector(".sidebar-user-card").innerHTML = spanBottomHtml;
-  await loadProfile(spanHtml, spanBottomHtml);
+
+// loadProfile shows the real user, or the fallback above if nobody is signed in
+await loadProfile(spanHtml, spanBottomHtml);
+
+if (!session) {
+  html = "";
+  document.querySelector(".feed-timeline").innerHTML = html;
+} else {
   await loadRecipes();
 }
+
+await usersToFollow(session?.user?.id);
+
+// ---------- Click handlers ----------
 
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".btn-toggle-recipe-details");
@@ -39,11 +51,129 @@ document.addEventListener("click", (e) => {
   const details = btn.parentElement.querySelector(".recipe-full-instructions");
   details.classList.toggle("open"); // vagy amilyen osztályt a CSS-ed használ
 });
+
 document
   .getElementById("submitRecipeBtn")
-  .addEventListener("click", () => uploadRecipe());
+  ?.addEventListener("click", () => uploadRecipe());
+
+document.addEventListener("click", async (e) => {
+  const likeBtn = e.target.closest(".js-like-btn");
+  if (!likeBtn) return;
+
+  likeBtn.disabled = true;
+
+  try {
+    const post_id = likeBtn.dataset.postId;
+
+    const { data, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error("Session error:", sessionError);
+      return;
+    }
+    if (!data.session) {
+      console.error("No signed in user!");
+      return;
+    }
+
+    const user_id = data.session.user.id;
+
+    const { error: insertError } = await supabase
+      .from("favorite")
+      .insert({ post_id, user_id });
+    if (insertError) {
+      if (insertError.code === "23505") {
+        console.log("You already liked this post.");
+      } else {
+        console.error("Insert error:", insertError);
+      }
+      return;
+    }
+
+    // a frissített számláló visszaolvasása
+    const { data: post, error: countError } = await supabase
+      .from("public_recipes") // a tábla, ahol a like_count van
+      .select("likescount")
+      .eq("id", post_id) // a recept id-ja, nem a szerzőé (nameid)
+      .single();
+
+    if (countError) {
+      console.error("Count error:", countError);
+      return;
+    }
+
+    // UI frissítése
+    likeBtn.dataset.likeCount = post.likescount;
+    likeBtn.querySelector(".like-count").textContent = post.likescount;
+  } finally {
+    likeBtn.disabled = false;
+  }
+});
+
+// One follow handler for both the feed button (.follow-btn)
+// and the "Chefs to Follow" buttons (.btn-follow)
+document.addEventListener("click", async (e) => {
+  const button = e.target.closest(".follow-btn, .btn-follow");
+  // "View Profile" is a link that also has .btn-follow, so skip it
+  if (!button || button.classList.contains("js-view-profile")) return;
+
+  const followedId = button.dataset.posterId ?? button.dataset.userId;
+  if (!followedId) return;
+
+  button.disabled = true;
+
+  const { error } = await supabase
+    .from("follows")
+    .insert({ followedid: followedId });
+
+  if (error && error.code !== "23505") {
+    console.error(error);
+    button.disabled = false; // real error, let them try again
+    return;
+  }
+
+  if (error) {
+    console.log("You're already following him.");
+  } else {
+    window.alert("Follow Successful!");
+  }
+  setFollowing(followedId);
+});
+
+// ---------- Functions ----------
+
+// Turns every follow button for this chef into a disabled "Following" button
+function setFollowing(followedId) {
+  document
+    .querySelectorAll(
+      `.follow-btn[data-poster-id="${followedId}"], .btn-follow[data-user-id="${followedId}"]`,
+    )
+    .forEach((b) => {
+      b.textContent = "Following";
+      b.disabled = true;
+    });
+}
+
+// After the feed is drawn: mark the chefs you already follow
+async function markFollowed(user_id) {
+  if (!user_id) return;
+  const { data, error } = await supabase
+    .from("follows")
+    .select("followedid")
+    .eq("followerid", user_id);
+  if (error) {
+    console.error(error);
+    return;
+  }
+  data.forEach((row) => setFollowing(row.followedid));
+}
 
 async function uploadRecipe() {
+  const imageFileInput = document.getElementById("imageFileInput").files[0];
+  if (!imageFileInput) {
+    alert("Válassz ki egy képet!");
+    return;
+  }
+
   const thoughts = document.getElementById("postTextInput").value;
   const recipeTitle = document.getElementById("recipeTitleInput").value;
   const prepTime = document.getElementById("prepTimeInput").value;
@@ -51,89 +181,38 @@ async function uploadRecipe() {
   const servings = document.getElementById("servingsInput").value;
   const ingredients = document.getElementById("ingredientsInput").value;
   const cookingSteps = document.getElementById("instructionsInput").value;
-  const imageFileInput = document.getElementById("imageFileInput").files[0];
   const visibility = document.getElementById("visibilitySelect").value;
-  const hashtags = document
-    .getElementById("hashtags")
-    .value.replace(/\s+/g, "");
+  const hashtags = document.getElementById("hashtags").value.replace(/\s+/g, "");
   const likescount = 0;
   const dateofpub = dayjs().format("YYYY-MM-DD");
+
   const fileExt = imageFileInput.name.split(".").pop();
   const fileName = `${Date.now()}.${fileExt}`;
   const url = `public/${fileName}`;
 
-  if (!imageFileInput) {
-    alert("Válassz ki egy képet!");
-    return;
-  }
+  const result = await upload({
+    thoughts,
+    recipeTitle,
+    prepTime,
+    difficulty,
+    servings,
+    ingredients,
+    cookingSteps,
+    url,
+    imageFileInput,
+    visibility,
+    hashtags,
+    likescount,
+    dateofpub,
+  });
 
-  //Upload image to Supabase Storage
-  const uploadImage = await supabase.storage
-    .from("recipeImages") // bucket neve
-    .upload(url, imageFileInput); // helye a bucket-ben, fájl
-  if (uploadImage.error) {
-    console.error("Upload error:", uploadImage.error);
-    return;
-  }
-
-  const response = await supabase.auth.getUser();
-  const id = response.data?.user?.id;
-  if (response.error) {
-    console.error("Error during selecting the user:", response.error.message);
-    return;
-  }
-
-  if (!id) {
-    alert("Sign in to reach this feature!");
-    return;
-  }
-  console.log(id);
-
-  //Upload recipe and imageFilePath to Supabase
-  if (visibility === "public") {
-    const { error: insertError } = await supabase
-      .from("public_recipes")
-      .insert({
-        nameid: id,
-        likescount,
-        dateofpub,
-        thoughts,
-        recipetitle: recipeTitle,
-        preptime: prepTime,
-        difficulty,
-        servings,
-        ingredients,
-        cookingsteps: cookingSteps,
-        imageSrc: url,
-        hashtags,
-      });
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      await supabase.storage.from("recipeImages").remove([url]);
-      return;
+  if (!result.success) {
+    if (result.error.message === "Not signed in") {
+      alert("Sign in to reach this feature!");
+    } else {
+      alert("Upload failed. Please try again.");
     }
-  }
-  if (visibility === "private") {
-    const { error: insertError } = await supabase
-      .from("private_recipes")
-      .insert({
-        nameid: id,
-        dateofpub,
-        thoughts,
-        recipetitle: recipeTitle,
-        preptime: prepTime,
-        difficulty,
-        servings,
-        ingredients,
-        cookingsteps: cookingSteps,
-        imageSrc: url,
-        hashtags,
-      });
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      await supabase.storage.from("recipeImages").remove([url]);
-      return;
-    }
+    return;
   }
 
   await loadRecipes();
@@ -141,91 +220,60 @@ async function uploadRecipe() {
 }
 
 async function loadRecipes() {
-  const userResponse = await supabase.auth.getSession();
-  if (userResponse.error) {
-    console.error(userResponse.error);
-    return;
-  }
-  const user_id = userResponse.data.session.user.id;
-  html = "";
-  const { data: recipes, error: recipesError } = await supabase
-    .from("public_recipes")
-    .select();
+  const { recipes, usernames, user_id } = await fetchRecipes();
 
-  if (recipesError) {
-    console.error("Error fetching recipes:", recipesError);
-    return;
-  }
+  const html = recipes
+    .map((recipe) => {
+      const username = usernames.get(recipe.nameid) || "Unknown writer!";
+      const { data: img } = supabase.storage
+        .from("recipeImages")
+        .getPublicUrl(recipe.imageSrc);
 
-  const recipesWithUsers = await Promise.all(
-    recipes.map(async (recipe) => {
-      const { data: userData } = await supabase
-        .from("recipes_with_users")
-        .select("username")
-        .eq("nameid", recipe.nameid)
-        .limit(1)
-        .single();
-
-      return {
-        ...recipe,
-        username: userData?.username || "Unknown writer!",
-      };
-    }),
-  );
-
-  recipesWithUsers.forEach((recipe) => {
-    const username = recipe.username;
-    const { data: img } = supabase.storage
-      .from("recipeImages")
-      .getPublicUrl(recipe.imageSrc);
-
-    html += `
-        <article class="feed-card" data-tags="${recipe.hashtags}" data-title="chocolate cake"
-                    data-author="${username}">
+      return `
+        <article class="feed-card" data-tags="${esc(recipe.hashtags)}" data-title="${esc(recipe.recipetitle)}"
+                    data-author="${esc(username)}">
                     <div class="post-header">
                         <div class="author-info">
-                            <img class="author-avatar" src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}"
-                                alt="${username}">
+                            <img class="author-avatar" ${avatarAttrs(recipe.nameid, username)}
+                                alt="${esc(username)}">
                             <div class="author-details">
                                 <div class="author-name-row">
-                                    <a href="personal page.html" class="author-name">${username}</a>
-                                    <span class="author-badge">(You)</span>
+                                    <a href="personal page.html" class="author-name">${esc(username)}</a>
+                                    ${recipe.nameid === user_id ? `<span class="author-badge">(You)</span>` : ""}
                                 </div>
-                                <div class="author-handle-time">@${username} • ${recipe.dateofpub}</div>
+                                <div class="author-handle-time">@${esc(username)} • ${esc(recipe.dateofpub)}</div>
                             </div>
                         </div>
                         ${
                           recipe.nameid !== user_id
                             ? `
-                            <button class='follow-btn' data-user-id="${user_id} data-poster-id="${recipe.nameid}">Follow</button>
-                            <a href="otheronesPage.html?uid=${encodeURIComponent(recipe.nameid)}&username=${encodeURIComponent(recipe.username)}"
+                            <button class='follow-btn' data-user-id="${esc(user_id)}" data-poster-id="${esc(recipe.nameid)}">Follow</button>
+                            <a href="otheronesPage.html?uid=${encodeURIComponent(recipe.nameid)}&username=${encodeURIComponent(username)}"
                             class="btn-follow following js-view-profile">View Profile</a>
                             `
                             : ""
                         }
                         </div>
                     <div class="post-content">
-                        ${recipe.thoughts}
+                        ${esc(recipe.thoughts)}
                         <div class="post-tags">
                             ${(recipe.hashtags ?? "")
                               .split("#")
                               .filter(Boolean)
-                              .map(
-                                (t) => `<a href="#" class="tag-pill">#${t}</a>`,
-                              )
+                              .map((t) => `<a href="#" class="tag-pill">#${esc(t)}</a>`)
                               .join("")}
                         </div>
                     </div>
 
                     <div class="post-recipe-card">
                         <img class="post-recipe-image"
-                            src="${img.publicUrl}" alt="${recipe.recipetitle}">
+                            src="${img.publicUrl}" alt="${esc(recipe.recipetitle)}">
                         <div class="post-recipe-meta">
-                            <div class="recipe-title-text">${recipe.recipetitle}</div>
+                            <div class="recipe-title-text">${esc(recipe.recipetitle)}</div>
                             <div class="recipe-badges">
-                                <span class="badge-item">Time: ${recipe.preptime}</span>
-                                <span class="badge-item">Difficulty: ${recipe.difficulty}</span>
-                                <span class="badge-item">Servings: ${recipe.servings}</span>
+                                <span class="badge-item">Time: ${esc(recipe.preptime)}</span>
+                                <span class="badge-item">Difficulty: ${esc(recipe.difficulty)}</span>
+                                <span class="badge-item">Servings: ${esc(recipe.servings)}</span>
                             </div>
                             <button class="btn-toggle-recipe-details">
                                 <span>Show Ingredients & Steps</span> ⌄
@@ -233,13 +281,13 @@ async function loadRecipes() {
                             <div class="recipe-full-instructions">
                                 <h4>Ingredients</h4>
                                 <ul>
-                                ${recipe.ingredients
+                                ${(recipe.ingredients ?? "")
                                   .split("\n")
-                                  .map((i) => `<li>${i}</li>`)
+                                  .map((i) => `<li>${esc(i)}</li>`)
                                   .join("")}
                                 </ul>
                                 <h4>Instructions</h4>
-                                <p>${recipe.cookingsteps}</p>
+                                <p>${esc(recipe.cookingsteps)}</p>
                             </div>
                         </div>
                     </div>
@@ -251,8 +299,8 @@ async function loadRecipes() {
                         <button class="action-btn recook-btn">
                             Re-cook <span class="recook-count">12</span>
                         </button>
-                        <button class="action-btn like-btn liked js-like-btn" data-post-id="${recipe.id}" data-like-count="${recipe.likescount}">
-                            Favorite <span class="like-count">${recipe.likescount}</span>
+                        <button class="action-btn like-btn liked js-like-btn" data-post-id="${esc(recipe.id)}" data-like-count="${esc(recipe.likescount)}">
+                            Favorite <span class="like-count">${esc(recipe.likescount)}</span>
                         </button>
                         <button class="action-btn bookmark-btn bookmarked">
                             Saved
@@ -288,13 +336,16 @@ async function loadRecipes() {
                         </div>
                     </div>
                 </article>`;
-  });
-  document.querySelector(".feed-timeline").innerHTML = html;
+    })
+    .join("");
+
+  const feed = document.querySelector(".feed-timeline");
+  if (feed) feed.innerHTML = html;
+
+  await markFollowed(user_id);
 }
-loadRecipes();
 
-document.querySelector(".user-badge-nav").innerHTML = spanHtml;
-
+// If nobody is signed in, the spanHtml / spanBottomHtml passed in are shown instead
 export async function loadProfile(spanHtml, spanBottomHtml) {
   const {
     data: { user },
@@ -305,126 +356,68 @@ export async function loadProfile(spanHtml, spanBottomHtml) {
   }
 
   if (user) {
-    const username = user?.user_metadata?.username;
+    const username = user.user_metadata?.username || "User";
+    const avatar = avatarAttrs(user.id, username);
 
     spanHtml = `
-        <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username} Profile">
-        <span>${username}</span> 
+        <img ${avatar} alt="${esc(username)} Profile">
+        <span>${esc(username)}</span>
         `;
 
     spanBottomHtml = `
-        <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username}">
+        <img ${avatar} alt="${esc(username)}">
     <div class="user-card-names">
-        <span class="user-card-name">${username}</span>
-        <span class="user-card-handle">@${username}</span>
+        <span class="user-card-name">${esc(username)}</span>
+        <span class="user-card-handle">@${esc(username)}</span>
     </div>
     `;
   }
 
-  document.querySelector(".sidebar-user-card").innerHTML = spanBottomHtml;
+  const bottomEl = document.querySelector(".sidebar-user-card");
+  const navEl = document.querySelector(".user-badge-nav");
+  if (bottomEl) bottomEl.innerHTML = spanBottomHtml ?? "";
+  if (navEl) navEl.innerHTML = spanHtml ?? "";
 
-  document.querySelector(".user-badge-nav").innerHTML = spanHtml;
+  // The avatar next to the "What are you cooking today?" box
+  if (user) {
+    setAvatar(
+      document.querySelector(".composer-avatar"),
+      user.id,
+      user.user_metadata?.username,
+    );
+  }
 }
 
-document.addEventListener("click", async (e) => {
-  const likeBtn = e.target.closest(".js-like-btn");
-  if (!likeBtn) return;
-
-  likeBtn.disabled = true;
-
-  try {
-    const post_id = likeBtn.dataset.postId;
-
-    const { data, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error("Session error:", sessionError);
-      return;
-    }
-    if (!data.session) {
-      console.error("No signed in user!");
-      return;
-    }
-
-    const user_id = data.session.user.id;
-
-    const { error: insertError } = await supabase
-      .from("favorite")
-      .insert({ post_id, user_id });
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      return;
-    }
-
-    // a frissített számláló visszaolvasása
-    const { data: post, error: countError } = await supabase
-      .from("public_recipes") // a tábla, ahol a like_count van
-      .select("likescount")
-      .eq("nameid", post_id)
-      .single();
-
-    if (countError) {
-      console.error("Count error:", countError);
-      return;
-    }
-
-    // UI frissítése
-    likeBtn.dataset.like_count = post.likeCount;
-    likeBtn.querySelector(".like-count").textContent = post.likeCount;
-  } finally {
-    likeBtn.disabled = false;
-  }
-});
-
-document.addEventListener("click", async (e) => {
-  const button = e.target.closest(".follow-btn");
-  if (!button) return;
-
-  button.disabled = true;
-  try {
-    const followedId = button.dataset.posterId;
-
-    const { error } = await supabase
-      .from("follows")
-      .insert({ followedid: followedId });
-
-    if (error) {
-      if (error.code === "23505") {
-        console.log("You're already following him.");
-      } else {
-        console.error(error);
-      }
-      return;
-    }
-
-    window.alert("Follow Successful!");
-  } finally {
-    button.disabled = false;
-  }
-});
-
-
-loadProfile();
-
 async function usersToFollow(user_id) {
-  const esc = (s) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
   const divElement = document.getElementById("chefsToFollow");
   if (!divElement) return;
 
-  const { data, error } = await supabase
-    .from("recipes_with_users")
-    .select("nameid, username")
-    .neq("nameid", user_id);   // magadat ne ajánlja
+  // magadat és akiket már követsz, ne ajánlja
+  const excluded = [];
+  if (user_id) {
+    excluded.push(user_id);
+    const { data: followed, error: followedError } = await supabase
+      .from("follows")
+      .select("followedid")
+      .eq("followerid", user_id);
+    if (followedError) console.error(followedError);
+    excluded.push(...(followed ?? []).map((f) => f.followedid));
+  }
+
+  // az összes felhasználó (nem csak akiknek van receptje), max. 5 fő
+  let query = supabase.from("users_public").select("nameid, username").limit(5);
+  if (excluded.length > 0) {
+    query = query.not("nameid", "in", `(${excluded.join(",")})`);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error(error);
     return;
   }
 
-  // minden szerző csak egyszer, max. 5 fő
-  const uniqueUsers = [...new Map(data.map((u) => [u.nameid, u])).values()].slice(0, 5);
+  const uniqueUsers = data;
 
   divElement.innerHTML =
     `<div class="widget-title">Chefs to Follow</div>` +
@@ -433,7 +426,7 @@ async function usersToFollow(user_id) {
         (user) => `
       <div class="chef-suggest-item">
         <div class="chef-suggest-info">
-          <img src="https://placehold.co/600x400/927965/ffffff?text=${encodeURIComponent(user.username)}"
+          <img ${avatarAttrs(user.nameid, user.username)}
                alt="${esc(user.username)}">
           <div class="user-card-names">
             <span class="user-card-name">${esc(user.username)}</span>
@@ -445,32 +438,3 @@ async function usersToFollow(user_id) {
       )
       .join("");
 }
-
-document.addEventListener("click", async (e) => {
-  const button = e.target.closest(".btn-follow");
-  if (!button) return;
-
-  button.disabled = true;
-  try {
-    const followedId = button.dataset.userId;
-
-    const { error } = await supabase
-      .from("follows")
-      .insert({ followedid: followedId });
-
-    if (error) {
-      if (error.code === "23505") {
-        console.log("You're already following him.");
-      } else {
-        console.error(error);
-      }
-      return;
-    }
-
-    window.alert("Follow Successful!");
-  } finally {
-    button.disabled = false;
-  }
-});
-await usersToFollow(session?.user?.id);
-

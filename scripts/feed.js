@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ==========================================
        2. POST COMPOSER SUBMISSION
        ========================================== */
+       /*
     const submitBtn = document.getElementById("submitRecipeBtn");
     const postTextInput = document.getElementById("postTextInput");
     const recipeTitleInput = document.getElementById("recipeTitleInput");
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (toggleFieldsBtn) toggleFieldsBtn.innerHTML = "+ Add Recipe Details (Ingredients & Time)";
         });
     }
-
+*/
     /* ==========================================
        3. HELPER TO CREATE DYNAMIC FEED CARDS
        ========================================== */
