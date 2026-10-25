@@ -13,6 +13,10 @@ const esc = (s) =>
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
 
+// Tab filter state
+let followedIds = new Set(); // akiket követsz
+let currentTab = "for-you";
+
 const {
   data: { session },
 } = await supabase.auth.getSession();
@@ -55,6 +59,17 @@ document.addEventListener("click", (e) => {
 document
   .getElementById("submitRecipeBtn")
   ?.addEventListener("click", () => uploadRecipe());
+
+// Tabváltás (For You / Following / Trending)
+document.addEventListener("click", (e) => {
+  const tab = e.target.closest(".feed-tab");
+  if (!tab) return;
+  currentTab = tab.dataset.tab;
+  document
+    .querySelectorAll(".feed-tab")
+    .forEach((t) => t.classList.toggle("active", t === tab));
+  applyTabFilter();
+});
 
 document.addEventListener("click", async (e) => {
   const likeBtn = e.target.closest(".js-like-btn");
@@ -137,9 +152,40 @@ document.addEventListener("click", async (e) => {
     window.alert("Follow Successful!");
   }
   setFollowing(followedId);
+
+  followedIds.add(followedId);
+  applyTabFilter();
+
+  // A "Chefs to Follow" listából eltűnik, és a helyére új ajánlott kerül
+  if (button.classList.contains("btn-follow")) {
+    await usersToFollow(session?.user?.id);
+  }
 });
 
 // ---------- Functions ----------
+
+// "Following" tabon csak a követett szerzők receptjei látszanak
+function applyTabFilter() {
+  const feed = document.querySelector(".feed-timeline");
+  if (!feed) return;
+
+  feed.querySelector(".following-empty")?.remove();
+
+  let visible = 0;
+  feed.querySelectorAll(".feed-card").forEach((card) => {
+    const show =
+      currentTab !== "following" || followedIds.has(card.dataset.authorId);
+    card.style.display = show ? "" : "none";
+    if (show) visible++;
+  });
+
+  if (currentTab === "following" && visible === 0) {
+    feed.insertAdjacentHTML(
+      "beforeend",
+      `<p class="following-empty">No recipes from people you follow yet.</p>`,
+    );
+  }
+}
 
 // Turns every follow button for this chef into a disabled "Following" button
 function setFollowing(followedId) {
@@ -164,7 +210,10 @@ async function markFollowed(user_id) {
     console.error(error);
     return;
   }
-  data.forEach((row) => setFollowing(row.followedid));
+  data.forEach((row) => {
+    followedIds.add(row.followedid);
+    setFollowing(row.followedid);
+  });
 }
 
 async function uploadRecipe() {
@@ -230,7 +279,7 @@ async function loadRecipes() {
         .getPublicUrl(recipe.imageSrc);
 
       return `
-        <article class="feed-card" data-tags="${esc(recipe.hashtags)}" data-title="${esc(recipe.recipetitle)}"
+        <article class="feed-card" data-author-id="${esc(recipe.nameid)}" data-tags="${esc(recipe.hashtags)}" data-title="${esc(recipe.recipetitle)}"
                     data-author="${esc(username)}">
                     <div class="post-header">
                         <div class="author-info">
@@ -343,6 +392,7 @@ async function loadRecipes() {
   if (feed) feed.innerHTML = html;
 
   await markFollowed(user_id);
+  applyTabFilter();
 }
 
 // If nobody is signed in, the spanHtml / spanBottomHtml passed in are shown instead
@@ -413,11 +463,20 @@ async function usersToFollow(user_id) {
   const { data, error } = await query;
 
   if (error) {
-    console.error(error);
+    console.error("users_public error:", error);
+    divElement.innerHTML =
+      `<div class="widget-title">Chefs to Follow</div><p>Could not load users.</p>`;
     return;
   }
 
   const uniqueUsers = data;
+
+  if (uniqueUsers.length === 0) {
+    divElement.innerHTML =
+      `<div class="widget-title">Chefs to Follow</div>
+       <p class="chef-suggest-empty">You're following everyone for now!</p>`;
+    return;
+  }
 
   divElement.innerHTML =
     `<div class="widget-title">Chefs to Follow</div>` +

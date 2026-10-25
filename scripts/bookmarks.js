@@ -1,4 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+import { avatarAttrs } from "./avatar.js";
+
+// Escapes user-written text before it goes into innerHTML
+const esc = (s) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
 const supabase = createClient(
   "https://zlncrzsnizkozucrkvyn.supabase.co", //Project URL
   "sb_publishable_RJZkVfaz6GD0OF1jTFLTGQ_T9ESEubR", //Publishable key
@@ -17,29 +25,31 @@ async function loadProfile() {
   if (authError) {
     console.error("No SignedIn user!");
   }
-  let spanBottomHtml;
-  let spanHtml;
+  let spanBottomHtml = "";
+  let spanHtml = "";
 
   if (user) {
-    const username = user?.user_metadata?.username;
+    const username = user.user_metadata?.username || "User";
+    const avatar = avatarAttrs(user.id, username);
 
     spanHtml = `
-        <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username} Profile">
-        <span>${username}</span> 
+        <img ${avatar} alt="${esc(username)} Profile">
+        <span>${esc(username)}</span>
         `;
 
     spanBottomHtml = `
-        <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username}">
+        <img ${avatar} alt="${esc(username)}">
     <div class="user-card-names">
-        <span class="user-card-name">${username}</span>
-        <span class="user-card-handle">@${username}</span>
+        <span class="user-card-name">${esc(username)}</span>
+        <span class="user-card-handle">@${esc(username)}</span>
     </div>
     `;
   }
 
-  document.querySelector(".sidebar-user-card").innerHTML = spanBottomHtml;
-
-  document.querySelector(".user-badge-nav").innerHTML = spanHtml;
+  const bottomEl = document.querySelector(".sidebar-user-card");
+  const navEl = document.querySelector(".user-badge-nav");
+  if (bottomEl) bottomEl.innerHTML = spanBottomHtml;
+  if (navEl) navEl.innerHTML = spanHtml;
 }
 
 async function loadSavedRecipes() {
@@ -135,7 +145,7 @@ document.querySelector('.bookmarks-header-card').innerHTML = `
     card.innerHTML = `
                 <div class="post-header">
                     <div class="author-info">
-                        <img class="author-avatar" src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username}">
+                        <img class="author-avatar" ${avatarAttrs(recipe.nameid, username)} alt="${esc(username)}">
                         <div class="author-details">
                             <div class="author-name-row">
                                 <span class="author-name">${username}</span>

@@ -1,44 +1,230 @@
-body {
-    font-family: Georgia, "Times New Roman", serif;
-    background: #f4eee6;
-    color: #4a382c;
-    min-height: 100vh;
-    padding: 35px;
+/* =========================================================
+   DishX - bejelentkezés / regisztráció
+   Ugyanaz a bézs téma, mint a css.css-ben, mobilbarát.
+   ========================================================= */
+
+:root {
+    --bg: #f4eee6;
+    --surface: #fffdf9;
+    --border: #e8dccd;
+    --border-strong: #d8c6b2;
+    --text: #4a382c;
+    --heading: #5a4030;
+    --soft: #806653;
+    --muted: #9a8573;
+    --accent: #b89b7d;
+    --peach: #dbb9a1; /* a saját színed, a kártya felső csíkja */
+    --dark: #4a382c;
+    --dark-hover: #3a2b21;
+    --danger: #c4513f;
+
+    --radius-sm: 10px;
+    --radius-lg: 22px;
+    --pill: 999px;
+
+    --shadow: 0 8px 30px rgba(91, 66, 48, 0.1);
+    --ring: 0 0 0 3px rgba(184, 155, 125, 0.28);
 }
 
-.login-form, .register-form {
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px;
+
+    /* az űrlap függőlegesen is középre kerül */
     display: flex;
     flex-direction: column;
-    width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 500px;
+    justify-content: center;
+}
+
+h1,
+h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--heading);
     text-align: center;
-    padding: 20px;
-    border: solid 5px #dbb9a1;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    letter-spacing: -0.01em;
 }
 
-.login-form input, .register-form input {
-    padding: 10px 20px;
-    padding-left: 5px;
+/* =========================
+   ŰRLAP KÁRTYA
+   ========================= */
+
+.login-form,
+.register-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto 20px;
+    padding: 32px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 5px solid var(--peach);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
 }
 
-.login-form input:focus, .register-form input:focus {
+.login-form h1,
+.login-form h2,
+.register-form h1,
+.register-form h2 {
+    margin-bottom: 8px;
+    font-size: 26px;
+}
+
+/* =========================
+   MEZŐK
+   ========================= */
+
+.login-form label,
+.register-form label {
+    margin: 16px 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--soft);
+}
+
+.login-form input,
+.register-form input {
+    width: 100%;
+    padding: 12px 14px;
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 16px; /* 16px alatt az iPhone ráközelít a mezőre */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.login-form input::placeholder,
+.register-form input::placeholder {
+    color: var(--muted);
+}
+
+.login-form input:focus,
+.register-form input:focus {
     outline: none;
-    border: 2px solid #4a382c;
+    border-color: var(--dark);
+    box-shadow: var(--ring);
 }
 
-.login-form button, .register-form button {
-    padding: 10px 20px;
-    background-color: #4a382c;
-    color: #f4eee6;
+/* =========================
+   GOMB
+   ========================= */
+
+.login-form button,
+.register-form button {
+    margin-top: 24px;
+    padding: 13px 20px;
+    background: var(--dark);
+    color: var(--bg);
     border: none;
+    border-radius: var(--pill);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
     cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.login-form label, .register-form label {
-    margin-bottom: 5px;
-    font-size: 20px;
+.login-form button:hover,
+.register-form button:hover {
+    background: var(--dark-hover);
+    transform: translateY(-1px);
+}
+
+.login-form button:focus-visible,
+.register-form button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.login-form button:disabled,
+.register-form button:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
+}
+
+/* =========================
+   LINKEK, ÜZENETEK (ha használod)
+   ========================= */
+
+.login-form p,
+.register-form p {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--soft);
+}
+
+.login-form a,
+.register-form a {
+    color: var(--dark);
+    font-weight: 700;
+    text-underline-offset: 3px;
+}
+
+.login-form a:hover,
+.register-form a:hover {
+    color: var(--accent);
+}
+
+.form-message {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    text-align: center;
+}
+
+.form-message.error {
+    background: #fbeeea;
+    color: var(--danger);
+}
+
+.form-message.success {
+    background: #eaf3ec;
+    color: #4a7d56;
+}
+
+/* =========================
+   TELEFON
+   ========================= */
+
+@media (max-width: 480px) {
+    body {
+        padding: 16px 12px;
+        justify-content: flex-start;
+    }
+
+    .login-form,
+    .register-form {
+        padding: 24px 18px;
+        border-radius: 18px;
+    }
+
+    .login-form h1,
+    .login-form h2,
+    .register-form h1,
+    .register-form h2 {
+        font-size: 23px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+    }
 }

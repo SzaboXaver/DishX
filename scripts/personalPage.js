@@ -184,6 +184,26 @@ function bindAvatarUpload(user_id) {
   });
 }
 
+// Kijelentkezés, majd vissza a nyitóoldalra
+function bindSignOut() {
+  const signOutBtn = document.getElementById("signOutBtn");
+  if (!signOutBtn) return;
+
+  signOutBtn.addEventListener("click", async () => {
+    signOutBtn.disabled = true;
+
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign out error:", error);
+      alert("Sign out failed. Please try again.");
+      signOutBtn.disabled = false;
+      return;
+    }
+
+    window.location.href = "../index.html";
+  });
+}
+
 async function loadProfile() {
   const {
     data: { user },
@@ -237,6 +257,7 @@ async function loadProfile() {
 
     <input type="file" id="avatarFileInput" accept="image/*" hidden>
     <button type="button" id="changeAvatarBtn">Change profile picture</button>
+    <button type="button" id="signOutBtn">Sign out</button>
 
 </div>
 `;
@@ -250,6 +271,7 @@ async function loadProfile() {
   }
 
   bindAvatarUpload(user_id);
+  bindSignOut();
   await refreshCounts(user_id);
   watchCounts(user_id);
   await loadRecipes(user_id, username);

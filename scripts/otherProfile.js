@@ -157,7 +157,7 @@ async function loadProfile() {
 <div class="profile-info">
 
     <p id="name">
-        name: ${esc(username)}
+      ${esc(username)}
     </p>
 
     <p id="uid">
@@ -235,72 +235,76 @@ async function loadRecipes(user_id, user_name) {
 async function loadFavoriteRecipes() {
   const divElement = document.getElementById("favoriteRecipes");
   if (!divElement) return;
-  let html = ``;
-  divElement.innerHTML = html;
+  divElement.innerHTML = "";
 
-  const response = await supabase
+  const isOwnProfile = session?.user?.id === user_id;
+
+  // 1) Kedvencek azonosítói
+  const favRes = await supabase
     .from("favorite")
-    .select()
+    .select("post_id")
     .eq("user_id", user_id);
 
-  if (response.error) {
-    console.error(response.error);
+  if (favRes.error) {
+    console.error("Favorite error:", favRes.error);
     return;
   }
 
-  const postIds = response.data.map((x) => x.post_id);
-  const allRecipes = [];
+  const postIds = (favRes.data ?? []).map((x) => x.post_id);
+  console.log("Favorite post ids:", postIds); // ellenőrzéshez
+
+  let found = [];
 
   if (postIds.length > 0) {
-    // One query for all favorite recipes instead of one per favorite
-    const { data: recipes, error: recipesError } = await supabase
-      .from("public_recipes")
-      .select()
-      .in("id", postIds);
+    // 2) Publikus + (saját profilnál) privát receptek egyszerre
+    const [pubRes, privRes] = await Promise.all([
+      supabase.from("public_recipes").select().in("id", postIds),
+      isOwnProfile
+        ? supabase.from("private_recipes").select().in("id", postIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-    if (recipesError) {
-      console.error("Error fetching recipes:", recipesError);
-      return;
+    if (pubRes.error) console.error("Public recipes error:", pubRes.error);
+    if (privRes.error) console.error("Private recipes error:", privRes.error);
+
+    found = [...(pubRes.data ?? []), ...(privRes.data ?? [])];
+
+    // 3) Szerzők nevei (ha ez hibás, a receptek akkor is megjelennek)
+    const nameIds = [...new Set(found.map((r) => r.nameid))];
+    let usernames = new Map();
+    if (nameIds.length > 0) {
+      const { data: users, error: usersError } = await supabase
+        .from("recipes_with_users")
+        .select("nameid, username")
+        .in("nameid", nameIds);
+      if (usersError) console.error("Users error:", usersError);
+      usernames = new Map((users ?? []).map((u) => [u.nameid, u.username]));
     }
 
-    // One query for all usernames instead of one per recipe
-    const nameIds = [...new Set(recipes.map((r) => r.nameid))];
-    const { data: users, error: usersError } = await supabase
-      .from("recipes_with_users")
-      .select("nameid, username")
-      .in("nameid", nameIds);
-
-    if (usersError) console.error("Error fetching users:", usersError);
-
-    const usernames = new Map((users ?? []).map((u) => [u.nameid, u.username]));
-
-    const byId = new Map(
-      recipes.map((recipe) => [
-        String(recipe.id),
-        { ...recipe, username: usernames.get(recipe.nameid) || "Unknown writer!" },
-      ]),
-    );
-
-    // keep the order of the favorites
-    for (const post_id of postIds) {
-      const recipe = byId.get(String(post_id));
-      if (recipe) allRecipes.push(recipe);
-    }
+    found = found.map((r) => ({
+      ...r,
+      username: usernames.get(r.nameid) || "Unknown writer!",
+    }));
   }
 
-  if (allRecipes.length == 0) {
-    html = `
+  // 4) A kedvencek sorrendjének megtartása
+  const byId = new Map(found.map((r) => [String(r.id), r]));
+  const allRecipes = postIds
+    .map((id) => byId.get(String(id)))
+    .filter(Boolean);
+
+  if (allRecipes.length === 0) {
+    divElement.innerHTML = `
      <div class="bookmarks-empty-state">
-      <h3 class="bookmarks-empty-title">No Saved Recipes Yet</h3>
-      <p class="bookmarks-empty-text">When you find recipes you want to save or cook later, click Save and they will appear right here!</p>
+      <h3 class="bookmarks-empty-title">${username} haven't saved any recipes yet.</h3>
+      <p class="bookmarks-empty-text">When ${username} find recipes that ${username} want to save or cook later, those recipes will appear right here!</p>
       <a href="explore.html" class="btn-explore-now">Explore Recipes</a>
     </div>`;
-    divElement.innerHTML = html;
     return;
   }
 
-  html = allRecipes.map((recipe) => recipeCardHtml(recipe)).join("");
-  divElement.innerHTML = html;
-
+  divElement.innerHTML = allRecipes.map((r) => recipeCardHtml(r)).join("");
   bindCardToggle(divElement);
 }
+
+document.title = `DishX - ${username}'s page`;

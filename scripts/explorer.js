@@ -1,14 +1,21 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const supabase = createClient(
-  "https://zlncrzsnizkozucrkvyn.supabase.co", //Project URL
-  "sb_publishable_RJZkVfaz6GD0OF1jTFLTGQ_T9ESEubR", //Publishable key
-);
+import { supabase } from "./supabaseClient.js";
+import { avatarAttrs } from "./avatar.js";
+
+// Escapes user-written text before it goes into innerHTML
+const esc = (s) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+
 const {
   data: { session },
 } = await supabase.auth.getSession();
-if (!{ session }) console.error("No signed in User!");
-else {
-}
+if (!session) console.error("No signed in User!");
+
+let allRecipes = [];
+let savedIds = new Set(); // a bejelentkezett felhasználó elmentett receptjei (string id-k)
+
+// ---------- Profile ----------
 
 async function loadProfile() {
   const {
@@ -18,37 +25,52 @@ async function loadProfile() {
   if (authError) {
     console.error("No SignedIn user!");
   }
-  let spanBottomHtml;
-  let spanHtml;
+  let spanBottomHtml = "";
+  let spanHtml = "";
 
   if (user) {
-    const username = user?.user_metadata?.username;
+    const username = user.user_metadata?.username || "User";
+    const avatar = avatarAttrs(user.id, username);
 
     spanHtml = `
-        <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username} Profile">
-        <span>${username}</span> 
+        <img ${avatar} alt="${esc(username)} Profile">
+        <span>${esc(username)}</span>
         `;
 
     spanBottomHtml = `
-        <img src="https://placehold.co/600x400/d8c3ad/5a4030?text=${username}" alt="${username}">
+        <img ${avatar} alt="${esc(username)}">
     <div class="user-card-names">
-        <span class="user-card-name">${username}</span>
-        <span class="user-card-handle">@${username}</span>
+        <span class="user-card-name">${esc(username)}</span>
+        <span class="user-card-handle">@${esc(username)}</span>
     </div>
     `;
   }
 
-  document.querySelector(".sidebar-user-card").innerHTML = spanBottomHtml;
-
-  document.querySelector(".user-badge-nav").innerHTML = spanHtml;
+  const bottomEl = document.querySelector(".sidebar-user-card");
+  const navEl = document.querySelector(".user-badge-nav");
+  if (bottomEl) bottomEl.innerHTML = spanBottomHtml;
+  if (navEl) navEl.innerHTML = spanHtml;
 }
 
-const esc = (s) =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]));
+// ---------- Saved recipes ----------
 
-let allRecipes = [];
+async function loadSavedIds() {
+  savedIds = new Set();
+  if (!session) return;
+
+  const { data, error } = await supabase
+    .from("favorite")
+    .select("post_id")
+    .eq("user_id", session.user.id);
+
+  if (error) {
+    console.error("Favorite error:", error);
+    return;
+  }
+  savedIds = new Set((data ?? []).map((x) => String(x.post_id)));
+}
+
+// ---------- Explore grid ----------
 
 function renderExploreGrid(recipes) {
   const gridElement = document.getElementById("exploreGrid");
@@ -60,12 +82,15 @@ function renderExploreGrid(recipes) {
     return;
   }
 
-  gridElement.innerHTML = recipes.map((recipe) => {
-    const { data: img } = supabase.storage
-      .from("recipeImages")
-      .getPublicUrl(recipe.imageSrc);
+  gridElement.innerHTML = recipes
+    .map((recipe) => {
+      const { data: img } = supabase.storage
+        .from("recipeImages")
+        .getPublicUrl(recipe.imageSrc);
 
-    return `
+      const isSaved = savedIds.has(String(recipe.id));
+
+      return `
       <div class="explore-card" data-id="${esc(recipe.id)}">
         <div class="explore-img-wrapper">
           <img class="explore-img" src="${esc(img.publicUrl)}" alt="${esc(recipe.recipetitle)}">
@@ -73,30 +98,35 @@ function renderExploreGrid(recipes) {
             <span class="explore-badge">${esc(recipe.preptime)} • ${esc(recipe.difficulty)}</span>
             <button class="explore-view-btn">View Recipe Post</button>
           </div>
-          <button class="explore-bookmark-btn" data-post-id="${esc(recipe.id)}" title="Save Recipe">Save</button>
+          <button class="explore-bookmark-btn ${isSaved ? "saved" : ""}" data-post-id="${esc(recipe.id)}" title="${isSaved ? "Saved" : "Save Recipe"}">${isSaved ? "Saved" : "Save"}</button>
         </div>
         <div class="explore-card-info">
           <h3 class="explore-recipe-title">${esc(recipe.recipetitle)}</h3>
           <div class="explore-author-row">
             <img class="explore-author-avatar"
-                 src="https://placehold.co/600x400/d8c3ad/5a4030?text=${encodeURIComponent(recipe.username)}"
+                 ${avatarAttrs(recipe.nameid, recipe.username)}
                  alt="${esc(recipe.username)}">
             <span>${esc(recipe.username)} • ${esc(recipe.likescount)} Likes</span>
           </div>
         </div>
       </div>`;
-  }).join("");
+    })
+    .join("");
 }
 
 function filterExploreGrid() {
-  const query = document.getElementById("exploreSearchInput")?.value.toLowerCase().trim() || "";
-  const activeTag = document.querySelector(".explore-tag-pill.active")?.dataset.tag || "all";
+  const query =
+    document.getElementById("exploreSearchInput")?.value.toLowerCase().trim() || "";
+  const activeTag =
+    document.querySelector(".explore-tag-pill.active")?.dataset.tag || "all";
 
   const filtered = allRecipes.filter((r) => {
-    const matchesQuery = !query ||
+    const matchesQuery =
+      !query ||
       String(r.recipetitle ?? "").toLowerCase().includes(query) ||
       String(r.username ?? "").toLowerCase().includes(query);
-    const matchesTag = activeTag === "all" ||
+    const matchesTag =
+      activeTag === "all" ||
       String(r.recipetitle ?? "").toLowerCase().includes(activeTag.toLowerCase());
     return matchesQuery && matchesTag;
   });
@@ -106,88 +136,90 @@ function filterExploreGrid() {
 
 async function loadRecipes() {
   const { data, error } = await supabase.from("public_recipes").select();
-  if (error) { console.error(error); return; }
+  if (error) {
+    console.error(error);
+    return;
+  }
 
-  allRecipes = await Promise.all(
-    data.map(async (recipe) => {
-      const { data: userData } = await supabase
-        .from("recipes_with_users")
-        .select("username")
-        .eq("nameid", recipe.nameid)
-        .limit(1)
-        .maybeSingle();
-      return { ...recipe, username: userData?.username || "Unknown writer!" };
-    }),
-  );
+  // Egy lekérdezés az összes felhasználónévhez (receptenként külön helyett)
+  const nameIds = [...new Set(data.map((r) => r.nameid))];
+  let usernames = new Map();
+  if (nameIds.length > 0) {
+    const { data: users, error: usersError } = await supabase
+      .from("recipes_with_users")
+      .select("nameid, username")
+      .in("nameid", nameIds);
+    if (usersError) console.error("Users error:", usersError);
+    usernames = new Map((users ?? []).map((u) => [u.nameid, u.username]));
+  }
+
+  allRecipes = data.map((recipe) => ({
+    ...recipe,
+    username: usernames.get(recipe.nameid) || "Unknown writer!",
+  }));
 
   renderExploreGrid(allRecipes);
 }
 
+// ---------- Events ----------
 
-document.getElementById("exploreSearchInput")?.addEventListener("input", filterExploreGrid);
+document
+  .getElementById("exploreSearchInput")
+  ?.addEventListener("input", filterExploreGrid);
 
 document.querySelectorAll(".explore-tag-pill").forEach((pill) => {
   pill.addEventListener("click", () => {
-    document.querySelectorAll(".explore-tag-pill").forEach((p) => p.classList.remove("active"));
+    document
+      .querySelectorAll(".explore-tag-pill")
+      .forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");
     filterExploreGrid();
   });
 });
 
+// Save gomb
 document.addEventListener("click", async (e) => {
-  const likeBtn = e.target.closest(".explore-bookmark-btn");
-  if (!likeBtn) return;
+  const saveBtn = e.target.closest(".explore-bookmark-btn");
+  if (!saveBtn) return;
 
-  likeBtn.disabled = true;
+  const post_id = saveBtn.dataset.postId;
+
+  // már elmentett recept: nincs teendő
+  if (savedIds.has(String(post_id))) return;
+
+  if (!session) {
+    window.alert("Sign in to save recipes!");
+    return;
+  }
+
+  saveBtn.disabled = true;
 
   try {
-    const post_id = likeBtn.dataset.postId;
-
-    const { data, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) {
-      console.error("Session error:", sessionError);
-      return;
-    }
-    if (!data.session) {
-      console.error("No signed in user!");
-      return;
-    }
-
-    const user_id = data.session.user.id;
-
     const { error: insertError } = await supabase
       .from("favorite")
-      .insert({ post_id, user_id });
-      if(insertError.code === "23505") {
-        window.alert("You've already saved this recipe before.");
-    }
-    if (insertError) {
+      .insert({ post_id, user_id: session.user.id });
+
+    if (insertError && insertError.code !== "23505") {
       console.error("Insert error:", insertError);
       return;
     }
 
-    
-    // a frissített számláló visszaolvasása
-    const { data: post, error: countError } = await supabase
-      .from("public_recipes") // a tábla, ahol a like_count van
-      .select("like_count")
-      .eq("nameid", post_id)
-      .single();
-
-    if (countError) {
-      console.error("Count error:", countError);
-      return;
+    if (insertError) {
+      window.alert("You've already saved this recipe before.");
     }
 
-    // UI frissítése
-    likeBtn.dataset.like_count = post.likeCount;
-    likeBtn.querySelector(".like-count").textContent = post.likeCount;
+    // sikeres mentés (vagy már el volt mentve): Saved felirat
+    savedIds.add(String(post_id));
+    saveBtn.textContent = "Saved";
+    saveBtn.title = "Saved";
+    saveBtn.classList.add("saved");
   } finally {
-    likeBtn.disabled = false;
+    saveBtn.disabled = false;
   }
-
-
 });
+
+// ---------- Recipe modal ----------
+
 function openRecipeModal(recipe) {
   let backdrop = document.getElementById("recipeModalBackdrop");
   if (!backdrop) {
@@ -213,7 +245,7 @@ function openRecipeModal(recipe) {
         <div class="post-header">
           <div class="author-info">
             <img class="author-avatar"
-                 src="https://placehold.co/600x400/d8c3ad/5a4030?text=${encodeURIComponent(recipe.username)}"
+                 ${avatarAttrs(recipe.nameid, recipe.username)}
                  alt="${esc(recipe.username)}">
             <div class="author-details">
               <span class="author-name">${esc(recipe.username)}</span>
@@ -260,5 +292,9 @@ document.getElementById("exploreGrid")?.addEventListener("click", (e) => {
   const recipe = allRecipes.find((r) => String(r.id) === card.dataset.id);
   if (recipe) openRecipeModal(recipe);
 });
+
+// ---------- Start ----------
+
 await loadProfile();
+await loadSavedIds(); // a rács kirajzolása előtt kell, hogy a Saved felirat jó legyen
 await loadRecipes();
