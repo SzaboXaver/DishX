@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DishX - MainPage</title>
+    <link rel="stylesheet" href="../css.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         MAIN 3-COLUMN LAYOUT
+         ========================= -->
+    <div class="app-layout">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="left-sidebar">
+            <div class="sidebar-menu">
+                <a href="index.html" class="brand-logo sidebar-brand">
+                    DishX
+                </a>
+                <a href="index.html" class="menu-link active">
+                    <span>Home</span>
+                </a>
+                <a href="explore.html" class="menu-link">
+                    <span>Explore</span>
+                </a>
+                <a href="bookmarks.html" class="menu-link">
+                    <span>Bookmarks</span>
+                </a>
+                <a href="restaurants.html" class="menu-link">
+                    <span>Restaurants</span>
+                </a>
+                <a href="personal page.html" class="menu-link">
+                    <span>Profile</span>
+                </a>
+
+                <button class="btn-post-primary" onclick="document.getElementById('postTextInput').focus()">
+                    + Share Recipe
+                </button>
+            </div>
+
+            <a href="personal page.html" class="sidebar-user-card" title="Open My Profile">
+                <!--JavaScript content-->
+            </a>
+        </aside>
+
+
+        <!-- CENTER MAIN FEED -->
+        <main class="main-feed">
+
+            <!-- FEED TABS -->
+            <div class="feed-tabs-header">
+                <button class="feed-tab active" data-tab="for-you">For You</button>
+                <button class="feed-tab" data-tab="following">Following</button>
+                <button class="feed-tab" data-tab="trending">Trending Recipes</button>
+            </div>
+
+            <!-- RECIPE POST COMPOSER -->
+            <div class="composer-card">
+                <div class="composer-top">
+                    <img class="composer-avatar" src="https://placehold.co/600x400/d8c3ad/5a4030?text=Krisztina" alt="Krisztina">
+                    <div class="composer-form">
+                        <textarea id="postTextInput" class="composer-input" placeholder="What are you cooking today? Share a recipe, photo, or food thought..."></textarea>
+                        
+                        <button type="button" id="toggleRecipeFields" class="recipe-fields-toggle">
+                            + Add Recipe Details (Ingredients & Time)
+                        </button>
+
+                        <div id="recipeExtraFields" class="recipe-extra-fields">
+                            <div class="composer-row">
+                                <input type="text" id="recipeTitleInput" placeholder="Recipe Title (e.g., Creamy Garlic Pasta)">
+                                <input type="text" id="prepTimeInput" placeholder="Prep Time (e.g., 25 mins)">
+                            </div>
+                            <div class="composer-row">
+                                <select id="difficultySelect">
+                                    <option value="Easy">Difficulty: Easy</option>
+                                    <option value="Medium">Difficulty: Medium</option>
+                                    <option value="Hard">Difficulty: Hard</option>
+                                </select>
+                                <input type="text" id="servingsInput" placeholder="Servings (e.g., 4 servings)">
+                            </div>
+                            <div class="composer-row">
+                                <input type="text" id="ingredientsInput" placeholder="Ingredients (comma separated: Flour, Eggs, Sugar)">
+                            </div>
+                            <div class="composer-row">
+                                <textarea id="instructionsInput" class="composer-input" placeholder="Cooking Steps & Instructions..." style="min-height: 50px;"></textarea>
+                            </div>
+                            <div class="composer-row">
+                                <input type="file" id="imageFileInput">
+                            </div>
+                            <div class="composer-row">
+                                <input type="text" id="hashtags" placeholder="#hashtags">
+                            </div>
+                            <div class="composer-row visibility">
+                                <label>Choose visibilty!</label><br>
+                                <select id="visibilitySelect">
+                                    <option value="public">Visibility: Public</option>
+                                    <option value="private">Visibility: Private</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="composer-bottom">
+                            <!--
+                                 <div class="composer-tools">
+                                <button type="button" class="composer-tool-btn" title="Add Dish Photo">Photo</button>
+                                <button type="button" class="composer-tool-btn" title="Add Ingredients Tag">Tags</button>
+                                <button type="button" class="composer-tool-btn" title="Add Timer">Timer</button>
+                            </div>
+                            -->
+                            <button type="button" id="submitRecipeBtn" class="btn-submit-recipe">
+                                Post Recipe
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- FEED TIMELINE -->
+            <div class="feed-timeline" id="feedTimeline">
+                <!--JavaScript által generált tartalom-->
+            </div>
+
+        </main>
+
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="right-sidebar">
+
+            <!-- SEARCH BOX -->
+            <div class="search-box">
+                <input type="text" id="feedSearchInput" placeholder="Search recipes, tags, chefs...">
+            </div>
+
+            <!-- TRENDING TOPICS WIDGET -->
+            <div class="widget-card">
+                <div class="widget-title">What's Cooking</div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#PastaNight</span>
+                        <span class="trending-count">2,410 shared recipes</span>
+                    </div>
+                </div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#ChocolateCake</span>
+                        <span class="trending-count">1,890 shared recipes</span>
+                    </div>
+                </div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#SourdoughEra</span>
+                        <span class="trending-count">1,250 shared recipes</span>
+                    </div>
+                </div>
+
+                <div class="trending-item">
+                    <div class="trending-info">
+                        <span class="trending-tag">#AirFryerHacks</span>
+                        <span class="trending-count">980 shared recipes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHEFS TO FOLLOW WIDGET -->
+            <div class="widget-card" id="chefsToFollow">
+                
+
+            </div>
+
+        </aside>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../scripts/feed.js"></script>
+    <script src="../scripts/favorite.js"></script>
+    <script src="../scripts/script.js"></script>
+    <script src="../scripts/app.js"></script>
+    <script type="module" src="../scripts/database.js"></script>
+</body>
+
+</html>

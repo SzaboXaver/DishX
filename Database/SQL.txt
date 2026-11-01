@@ -1,0 +1,61 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.public_recipes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nameid uuid,
+  likescount smallint,
+  dateofpub date,
+  thoughts text,
+  recipetitle text,
+  preptime text,
+  difficulty text,
+  servings text,
+  ingredients text,
+  cookingsteps text,
+  imageSrc text,
+  hashtags text,
+  CONSTRAINT public_recipes_pkey PRIMARY KEY (id),
+  CONSTRAINT public_recipes_nameid_fkey FOREIGN KEY (nameid) REFERENCES auth.users(id)
+);
+CREATE TABLE public.profil_recipes (
+  id uuid,
+  viewed text,
+  fav uuid,
+  publishes uuid,
+  private text,
+  CONSTRAINT profil_recipes_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id),
+  CONSTRAINT profil_recipes_fav_fkey FOREIGN KEY (fav) REFERENCES public.public_recipes(id),
+  CONSTRAINT profil_recipes_publishes_fkey FOREIGN KEY (publishes) REFERENCES public.public_recipes(id)
+);
+CREATE TABLE public.favorite (
+  post_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  CONSTRAINT favorite_pkey PRIMARY KEY (post_id, user_id),
+  CONSTRAINT favorite_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.public_recipes(id),
+  CONSTRAINT favorite_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.private_recipes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nameid uuid NOT NULL DEFAULT auth.uid(),
+  dateofpub date DEFAULT CURRENT_DATE,
+  thoughts text,
+  recipetitle text,
+  preptime text,
+  difficulty text,
+  servings text,
+  ingredients text,
+  cookingsteps text,
+  imageSrc text,
+  hashtags text,
+  CONSTRAINT private_recipes_pkey PRIMARY KEY (id),
+  CONSTRAINT private_recipes_nameid_fkey FOREIGN KEY (nameid) REFERENCES auth.users(id)
+);
+CREATE TABLE public.follows (
+  followerid uuid NOT NULL DEFAULT auth.uid(),
+  followedid uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT follows_pkey PRIMARY KEY (followerid, followedid),
+  CONSTRAINT follows_followerid_fkey FOREIGN KEY (followerid) REFERENCES auth.users(id),
+  CONSTRAINT follows_followedid_fkey FOREIGN KEY (followedid) REFERENCES auth.users(id)
+);
